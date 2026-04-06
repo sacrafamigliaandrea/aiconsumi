@@ -1,0 +1,213 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>AI: Il Peso Invisibile del Click</title>
+    <style>
+        :root {
+            --primary: #2c3e50;
+            --accent: #e74c3c;
+            --bg: #f4f7f6;
+            --panel-bg: #ffffff;
+            --text: #333;
+        }
+
+        body, html {
+            margin: 0;
+            padding: 0;
+            height: 100%;
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: var(--bg);
+            color: var(--text);
+            overflow: hidden;
+        }
+
+        /* Layout 40:60 */
+        .container {
+            display: flex;
+            height: 100vh;
+            width: 100vw;
+        }
+
+        /* Sezione Video (40%) */
+        .video-section {
+            flex: 0 0 40%;
+            background-color: #000;
+            display: flex;
+            flex-direction: column;
+            border-right: 4px solid var(--primary);
+        }
+
+        .video-container {
+            position: relative;
+            padding-bottom: 56.25%; /* 16:9 */
+            height: 0;
+            overflow: hidden;
+        }
+
+        .video-container iframe {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+        }
+
+        .video-info {
+            padding: 20px;
+            color: white;
+            background: var(--primary);
+            flex-grow: 1;
+        }
+
+        /* Sezione Dati Interattivi (60%) */
+        .data-section {
+            flex: 0 0 60%;
+            padding: 30px;
+            overflow-y: auto;
+            display: flex;
+            flex-direction: column;
+        }
+
+        h1 { color: var(--primary); margin-top: 0; border-bottom: 2px solid var(--accent); padding-bottom: 10px; }
+
+        .dashboard-grid {
+            display: grid;
+            grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+            gap: 20px;
+            margin-bottom: 30px;
+        }
+
+        .card {
+            background: var(--panel-bg);
+            padding: 20px;
+            border-radius: 12px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            text-align: center;
+            cursor: pointer;
+            transition: transform 0.2s, border-color 0.2s;
+            border: 2px solid transparent;
+        }
+
+        .card:hover {
+            transform: translateY(-5px);
+            border-color: var(--accent);
+        }
+
+        .card img {
+            width: 60px;
+            height: 60px;
+            margin-bottom: 10px;
+        }
+
+        .card h3 { margin: 10px 0; font-size: 1.1rem; }
+
+        /* Area Risultato Dinamico */
+        #display-area {
+            background: var(--primary);
+            color: white;
+            padding: 30px;
+            border-radius: 15px;
+            min-height: 200px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 1.4rem;
+            line-height: 1.6;
+            animation: fadeIn 0.5s;
+        }
+
+        .source-tag {
+            margin-top: auto;
+            font-size: 0.8rem;
+            color: #7f8c8d;
+            text-align: right;
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; }
+            to { opacity: 1; }
+        }
+
+        .highlight {
+            color: #f1c40f;
+            font-weight: bold;
+        }
+    </style>
+</head>
+<body>
+
+<div class="container">
+    <!-- SINISTRA: VIDEO -->
+    <div class="video-section">
+        <div class="video-container">
+            <!-- Sostituisci l'ID dopo /embed/ con quello del video caricato se disponibile, o usa questo segnaposto -->
+            <iframe src="https://www.youtube.com/embed/dQw4w9WgXcQ" frameborder="0" allowfullscreen></iframe>
+        </div>
+        <div class="video-info">
+            <h2>Presa Diretta: Rivoluzione Artificiale</h2>
+            <p>Guarda il reportage e clicca sui dati a destra per confrontare i consumi dell'intelligenza artificiale con gli oggetti che usi ogni giorno.</p>
+        </div>
+    </div>
+
+    <!-- DESTRA: DATI INTERATTIVI -->
+    <div class="data-section">
+        <h1>📊 Dashboard dei Consumi AI</h1>
+        
+        <div class="dashboard-grid">
+            <div class="card" onclick="showData('smartphone')">
+                <img src="https://img.icons8.com/fluency/96/iphone.png" alt="smartphone">
+                <h3>1 Domanda AI</h3>
+            </div>
+            <div class="card" onclick="showData('car')">
+                <img src="https://img.icons8.com/fluency/96/electric-car.png" alt="auto">
+                <h3>1 Immagine AI</h3>
+            </div>
+            <div class="card" onclick="showData('water')">
+                <img src="https://img.icons8.com/fluency/96/water-glass.png" alt="acqua">
+                <h3>1 Conversazione</h3>
+            </div>
+            <div class="card" onclick="showData('city')">
+                <img src="https://img.icons8.com/fluency/96/city.png" alt="città">
+                <h3>Data Center</h3>
+            </div>
+        </div>
+
+        <div id="display-area">
+            Clicca su una delle icone sopra per iniziare il confronto...
+        </div>
+
+        <div class="source-tag">
+            Fonte dati: Nature Sustainability 2025 / UC Riverside / IEA Report
+        </div>
+    </div>
+</div>
+
+<script>
+    const data = {
+        smartphone: {
+            text: "Fare <span class='highlight'>una singola domanda</span> a un chatbot AI consuma circa 0,01 kWh. È esattamente la stessa energia che serve per caricare il tuo <span class='highlight'>Smartphone</span> dallo 0% al 100%!"
+        },
+        car: {
+            text: "Generare <span class='highlight'>un'immagine</span> con l'AI richiede così tanta potenza di calcolo che potresti percorrere circa <span class='highlight'>300 metri</span> guidando un' <span class='highlight'>auto elettrica</span>."
+        },
+        water: {
+            text: "Per ogni conversazione di 20-50 battute, l'AI 'beve' <span class='highlight'>mezzo litro d'acqua</span> dolce per raffreddare i server. È come versare un grande <span class='highlight'>bicchiere d'acqua</span> ogni volta che scrivi 'Ciao'."
+        },
+        city: {
+            text: "Il Data Center di Lachiarella (MI) consumerà 2 TWh/anno. È un numero enorme che equivale al consumo elettrico di <span class='highlight'>580.000 famiglie</span>... praticamente quanto tutti gli abitanti di una città come <span class='highlight'>Genova o Palermo</span>!"
+        }
+    };
+
+    function showData(key) {
+        const area = document.getElementById('display-area');
+        area.style.animation = 'none';
+        area.offsetHeight; /* trigger reflow */
+        area.style.animation = 'fadeIn 0.5s';
+        area.innerHTML = data[key].text;
+    }
+</script>
+
+</body>
+</html>
