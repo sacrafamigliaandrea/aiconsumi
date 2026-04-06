@@ -54,7 +54,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 .hdr-st .sv{color:var(--gm);font-weight:700;}.hdr-st .sa{color:var(--am);font-weight:700;}
 
 /* Phase nav */
-.nav{display:flex;background:var(--c);border-bottom:1px solid var(--bd);position:sticky;top:44px;z-index:99;}
+.nav{display:flex;background:var(--c);border-bottom:1px solid var(--bd);}
 .nt{flex:1;padding:10px 8px;font-family:'Space Mono',monospace;font-size:.62rem;font-weight:700;text-align:center;cursor:pointer;border:none;background:none;color:var(--tm);border-bottom:3px solid transparent;transition:all .2s;display:flex;align-items:center;justify-content:center;gap:5px;}
 .nt:hover{color:var(--g);background:var(--gp);}
 .nt.on{color:var(--g);border-bottom-color:var(--g);background:var(--gp);}
@@ -192,6 +192,15 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 .bf2{margin-top:16px;padding:14px;font-size:.56rem;color:var(--tm);line-height:1.5;border-top:1px solid var(--bd);}
 .bf2 strong{color:var(--g);}
 
+.skip-alert{
+  position:fixed;top:12px;right:12px;z-index:999;
+  display:none;align-items:center;gap:8px;cursor:help;
+}
+.skip-alert.vis{display:flex;animation:pulse 2s infinite;}
+.skip-alert svg{filter:drop-shadow(0 2px 8px rgba(192,57,43,.5));}
+.skip-count{font-family:'Space Mono',monospace;font-size:.58rem;background:var(--r);color:#fff;padding:3px 8px;border-radius:6px;white-space:nowrap;}
+@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.65;}}
+
 @media(max-width:700px){
   .ig{grid-template-columns:1fr;}
   .ag{grid-template-columns:1fr;}
@@ -202,6 +211,12 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 </style>
 </head>
 <body>
+
+<!-- SKIP ALERT -->
+<div class="skip-alert" id="skipAlert" title="Questo studente ha saltato avanti nel video">
+  <svg width="36" height="36" viewBox="0 0 24 24" fill="#c0392b" stroke="#fff" stroke-width="1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fff"/></svg>
+  <div class="skip-count" id="skipCount"></div>
+</div>
 
 <!-- ═══════════ P0: SPLASH ═══════════ -->
 <div class="ph on" id="P0">
@@ -343,18 +358,48 @@ function go(n){
 }
 
 /* ══════════════ YOUTUBE API ══════════════ */
-let vStart=0,vDone=false;
+let ytReady=false, vDone=false, vStart=0;
+let lastVidTime=0, skipCount=0;
+
 var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.head.appendChild(tag);
 var player;
 function onYouTubeIframeAPIReady(){
   player=new YT.Player('ytp',{videoId:'SEwfgJ3SlPg',playerVars:{rel:0,modestbranding:1,playsinline:1,fs:1},
     events:{onStateChange:function(e){
-      if(e.data===YT.PlayerState.PLAYING&&!vStart)vStart=Date.now();
+      if(e.data===YT.PlayerState.PLAYING&&!vStart){vStart=Date.now();lastVidTime=player.getCurrentTime();}
       if(e.data===YT.PlayerState.ENDED){vDone=true;unlock();}
     }}});
 }
 function unlock(){document.getElementById('bv').classList.add('rdy');document.getElementById('vlk').innerHTML='Video completato!';document.getElementById('vlk').style.color='#2a9d5c';}
-setInterval(()=>{if(vDone)return;if(vStart){const s=Math.round((Date.now()-vStart)/1000);document.getElementById('tmr').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');if(s>=120&&!document.getElementById('bv').classList.contains('rdy')){document.getElementById('bv').classList.add('rdy');document.getElementById('vlk').textContent='Puoi procedere.';document.getElementById('vlk').style.color='var(--gm)';}}},1000);
+
+// Timer + skip detection
+setInterval(()=>{
+  if(vDone)return;
+  if(vStart){
+    const s=Math.round((Date.now()-vStart)/1000);
+    document.getElementById('tmr').textContent=String(Math.floor(s/60)).padStart(2,'0')+':'+String(s%60).padStart(2,'0');
+    if(s>=120&&!document.getElementById('bv').classList.contains('rdy')){
+      document.getElementById('bv').classList.add('rdy');
+      document.getElementById('vlk').textContent='Puoi procedere.';
+      document.getElementById('vlk').style.color='var(--gm)';
+    }
+    // Skip detection
+    if(player&&player.getCurrentTime){
+      try{
+        const ct=player.getCurrentTime();
+        const diff=ct-lastVidTime;
+        if(diff>6){
+          // jumped forward more than 6 seconds in 1 real second = skip
+          skipCount++;
+          const alert=document.getElementById('skipAlert');
+          alert.classList.add('vis');
+          document.getElementById('skipCount').textContent='SKIP x'+skipCount;
+        }
+        lastVidTime=ct;
+      }catch(e){}
+    }
+  }
+},1000);
 
 /* ══════════════ TAB NAVIGATION ══════════════ */
 document.querySelectorAll('.nt').forEach(t=>{t.onclick=()=>{if(t.classList.contains('locked'))return;goTab(t.dataset.s);}});
@@ -407,17 +452,45 @@ function buildActs(){
 /* ══════════════ LEARN: CHOICES ══════════════ */
 const choices=[
   {q:'Cerchi "capitale della Francia". Google o Perplexity?',
-    a:{n:'Google',wh:.3,d:'2% batteria',ic:'M11 11m-8 0a8 8 0 1 0 16 0 8 8 0 1 0-16 0M21 21l-4.35-4.35',col:'#1B6D3F'},
-    b:{n:'Perplexity',wh:3,d:'20% batteria',ic:'M11 11m-8 0a8 8 0 1 0 16 0 8 8 0 1 0-16 0M21 21l-4.35-4.35M11 8v6M8 11h6',col:'#6b46c1'},
+    a:{n:'Google',wh:.3,d:'2% batteria',ic:'M11 11a8 8 0 1 0 0 .01M21 21l-4.35-4.35',col:'#1B6D3F'},
+    b:{n:'Perplexity',wh:3,d:'20% batteria',ic:'M11 11a8 8 0 1 0 0 .01M21 21l-4.35-4.35M11 8v6M8 11h6',col:'#6b46c1'},
     w:'b',rv:'Per una domanda cosi\' semplice, Perplexity consuma <strong>10 volte di piu\'</strong>. La risposta e\' identica: "Parigi". E\' come prendere l\'elicottero per andare al bar sotto casa.'},
-  {q:'Presentazione di 15 slide per storia: la fai tu o la genera l\'AI?',
-    a:{n:'Tu con PC (2h)',wh:100,d:'~7 ricariche',ic:'M3 4h18v12H3zM2 20h22',col:'#1B6D3F'},
-    b:{n:'AI genera tutto',wh:75,d:'~5 ricariche',ic:'M2 3h20v14H2zM8 21h8M12 17v4',col:'#c0392b'},
-    w:'similar',rv:'Energia quasi uguale! Ma se la fai tu, <strong>impari</strong>: organizzi, scegli, capisci. L\'AI ti da\' slide, non conoscenza. Il costo energetico e\' simile. <strong>Il costo educativo no.</strong>'},
-  {q:'25 studenti generano 10 immagini AI ciascuno, oppure accendete 25 lampadine per 1 ora?',
-    a:{n:'250 immagini AI',wh:750,d:'50 ricariche',ic:'M3 3h18v18H3zM8.5 8.5m-1.5 0a1.5 1.5 0 1 0 3 0 1.5 1.5 0 1 0-3 0M21 15l-5-5-11 11',col:'#D4930D'},
-    b:{n:'25 LED 1 ora',wh:250,d:'~17 ricariche',ic:'M9 18h6M10 22h4M12 2a7 7 0 0 0-4 12.7V17h8v-2.3A7 7 0 0 0 12 2z',col:'#D4930D'},
-    w:'a',rv:'L\'AI consuma <strong>3 volte di piu\'</strong> di 25 lampadine accese. E questo e\' <strong>una sola classe</strong>. Immagina tutte le scuole del mondo, nello stesso giorno...'},
+  {q:'Mandi 50 messaggi scritti su WhatsApp oppure fai 1 videochiamata di 10 minuti?',
+    a:{n:'50 messaggi testo',wh:0.15,d:'~1% batteria',ic:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',col:'#1B6D3F'},
+    b:{n:'Videochiamata 10 min',wh:2,d:'~13% batteria',ic:'M23 7l-7 5 7 5zM16 3H5a2 2 0 0 0-2 2v10a2 2 0 0 0 2 2h11a2 2 0 0 0 2-2V5a2 2 0 0 0-2-2z',col:'#c0392b'},
+    w:'b',rv:'La videochiamata consuma <strong>13 volte di piu\'</strong>. Ogni secondo di video richiede telecamera, microfono, compressione, trasmissione dati e decompressione. Un messaggio di testo sono pochi byte. A volte scrivere e\' meglio.'},
+  {q:'Scrolli TikTok per 1 ora oppure leggi un libro per 1 ora (con la luce accesa)?',
+    a:{n:'TikTok 1 ora',wh:7,d:'~47% batteria',ic:'M12 2a10 10 0 1 0 0 20 10 10 0 1 0 0-20zM15 8l-6 8M9 8l6 8',col:'#c0392b'},
+    b:{n:'Libro + luce LED',wh:10,d:'~67% batteria',ic:'M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2zM22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z',col:'#D4930D'},
+    w:'similar',rv:'Sorpresa: sono quasi uguali! TikTok usa lo smartphone + i data center. Il libro usa la lampadina. La differenza vera? Dopo 1 ora di libro hai imparato qualcosa. Dopo 1 ora di TikTok... <strong>ricordi cosa hai visto?</strong>'},
+  {q:'Scorri Instagram 1 ora oppure ascolti Spotify 1 ora?',
+    a:{n:'Instagram 1 ora',wh:6,d:'~40% batteria',ic:'M3 3h18v18H3zM8.5 8.5a1.5 1.5 0 1 0 0 .01M21 15l-5-5L5 21',col:'#c0392b'},
+    b:{n:'Spotify 1 ora',wh:0.8,d:'~5% batteria',ic:'M12 12a10 10 0 1 0 0 .01M9 12a3 3 0 1 0 0 .01M12 8v4l3 1',col:'#1B6D3F'},
+    w:'a',rv:'Instagram consuma <strong>8 volte di piu\'</strong> di Spotify. Ogni reel e\' un video in streaming: pesa tantissimo. L\'audio e\' leggerissimo. Morale: ascoltare musica e\' quasi gratis, scrollare video no.'},
+  {q:'Guardi YouTube 1 ora sulla TV del salotto oppure sullo smartphone?',
+    a:{n:'YouTube su TV',wh:77,d:'5 ricariche',ic:'M2 3h20v14H2zM8 21h8M12 17v4',col:'#c0392b'},
+    b:{n:'YouTube su smartphone',wh:5,d:'~33% batteria',ic:'M5 2h14v20H5zM12 18v.01',col:'#1B6D3F'},
+    w:'a',rv:'La TV consuma <strong>15 volte di piu\'</strong>! Lo schermo grande e luminoso beve energia. Lo smartphone ha uno schermino efficiente. Pero\' attenzione: la TV la condividi con la famiglia, lo smartphone lo usi solo tu.'},
+  {q:'Giochi a Fortnite 1 ora su PlayStation oppure su iPad?',
+    a:{n:'Fortnite su PS5',wh:180,d:'12 ricariche',ic:'M2 6h20v12H2zM8 12a2 2 0 1 0 0 .01M15 10v4M13 12h4',col:'#c0392b'},
+    b:{n:'Fortnite su iPad',wh:8,d:'~53% batteria',ic:'M4 2h16v20H4zM10 9l6 4-6 4z',col:'#2a9d5c'},
+    w:'a',rv:'La console consuma <strong>22 volte di piu\'</strong> dell\'iPad! Il processore della PS5 e\' una bestia affamata di energia. L\'iPad e\' progettato per risparmiare batteria. <strong>Stesso gioco, costo energetico completamente diverso.</strong>'},
+  {q:'Ti fai scrivere un tema da ChatGPT (500 parole) oppure lo scrivi tu a mano in 1 ora?',
+    a:{n:'ChatGPT scrive per te',wh:2,d:'~13% batteria',ic:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',col:'#D4930D'},
+    b:{n:'Lo scrivi tu (luce 1h)',wh:10,d:'~67% batteria',ic:'M17 3a2.83 2.83 0 0 1 4 4L7.5 20.5 2 22l1.5-5.5L17 3z',col:'#1B6D3F'},
+    w:'b',rv:'Scriverlo a mano "costa" di piu\' in energia (la lampadina!). Ma ChatGPT non ti ha insegnato nulla. <strong>L\'energia piu\' preziosa e\' quella che il tuo cervello usa per imparare.</strong> Quella non si misura in batteria.'},
+  {q:'Mandi 20 vocali da 1 minuto su WhatsApp oppure scrivi 20 messaggi di testo?',
+    a:{n:'20 vocali (20 min audio)',wh:0.8,d:'~5% batteria',ic:'M12 1a3 3 0 0 0-3 3v8a3 3 0 0 0 6 0V4a3 3 0 0 0-3-3zM19 10v2a7 7 0 0 1-14 0v-2',col:'#D4930D'},
+    b:{n:'20 messaggi scritti',wh:0.06,d:'<1% batteria',ic:'M21 15a2 2 0 0 1-2 2H7l-4 4V5a2 2 0 0 1 2-2h14a2 2 0 0 1 2 2z',col:'#1B6D3F'},
+    w:'a',rv:'I vocali consumano <strong>13 volte di piu\'</strong>: registrazione, compressione, upload, download, riproduzione. Un messaggio di testo e\' quasi invisibile per la rete. E poi... chi ha voglia di ascoltare 20 vocali di fila?'},
+  {q:'Scatti 10 selfie con filtri AI (tipo quelle che ti invecchiano) oppure 10 foto normali?',
+    a:{n:'10 selfie filtri AI',wh:3,d:'~20% batteria',ic:'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z',col:'#D4930D'},
+    b:{n:'10 foto normali',wh:0.1,d:'~1% batteria',ic:'M23 19a2 2 0 0 1-2 2H3a2 2 0 0 1-2-2V8a2 2 0 0 1 2-2h4l2-3h6l2 3h4a2 2 0 0 1 2 2zM12 17a5 5 0 1 0 0-10 5 5 0 0 0 0 10z',col:'#1B6D3F'},
+    w:'a',rv:'I filtri AI consumano <strong>30 volte di piu\'</strong>! Ogni filtro invia la tua foto a un server, un\'AI la elabora e te la rimanda. Una foto normale resta sul telefono. <strong>E poi: ti sei mai chiesto dove finisce la tua faccia dopo che l\'AI la elabora?</strong>'},
+  {q:'La classe (25 studenti) fa ognuno una presentazione con l\'AI oppure la fa a mano con PowerPoint?',
+    a:{n:'25 presentazioni AI',wh:1875,d:'125 ricariche',ic:'M2 3h20v14H2zM8 21h8M12 17v4',col:'#c0392b'},
+    b:{n:'25 studenti con PC (2h)',wh:2500,d:'167 ricariche',ic:'M3 4h18v12H3zM2 20h22',col:'#D4930D'},
+    w:'similar',rv:'Energia quasi uguale. Ma c\'e\' una differenza enorme: se la fai tu, <strong>impari</strong>. Scegli i contenuti, organizzi le idee, sviluppi il pensiero critico. L\'AI ti da\' slide perfette, ma <strong>il costo educativo non si misura in batteria</strong>.'},
 ];
 
 function buildCh(){
