@@ -192,14 +192,55 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 .bf2{margin-top:16px;padding:14px;font-size:.56rem;color:var(--tm);line-height:1.5;border-top:1px solid var(--bd);}
 .bf2 strong{color:var(--g);}
 
-.skip-alert{
-  position:fixed;top:12px;right:12px;z-index:999;
-  display:none;align-items:center;gap:8px;cursor:help;
+.skip-alert,.rush-alert{display:none!important;} /* legacy, replaced */
+
+/* ═══ MONITOR BADGE STACK ═══ */
+.mon-stack{
+  position:fixed;top:10px;right:10px;z-index:999;
+  display:flex;flex-direction:column;gap:5px;
+  pointer-events:none;
 }
-.skip-alert.vis{display:flex;animation:pulse 2s infinite;}
-.skip-alert svg{filter:drop-shadow(0 2px 8px rgba(192,57,43,.5));}
-.skip-count{font-family:'Space Mono',monospace;font-size:.58rem;background:var(--r);color:#fff;padding:3px 8px;border-radius:6px;white-space:nowrap;}
-@keyframes pulse{0%,100%{opacity:1;}50%{opacity:.65;}}
+.mon-badge{
+  display:flex;align-items:center;gap:6px;
+  padding:5px 10px 5px 6px;
+  border-radius:8px;font-family:'Space Mono',monospace;
+  font-size:.56rem;font-weight:700;color:#fff;
+  pointer-events:auto;cursor:help;
+  animation:badgeIn .4s ease-out;
+  box-shadow:0 2px 10px rgba(0,0,0,.3);
+  white-space:nowrap;
+}
+.mon-badge svg{width:18px;height:18px;flex-shrink:0;}
+@keyframes badgeIn{from{opacity:0;transform:translateX(30px);}to{opacity:1;transform:translateX(0);}}
+.mon-badge.red{background:#c0392b;}
+.mon-badge.amber{background:#D4930D;}
+.mon-badge.purple{background:#7b3fa0;}
+.mon-badge.grey{background:#5a6b60;}
+
+/* ═══ DISCIPLINE OVERLAY ═══ */
+.overlay{
+  position:fixed;inset:0;z-index:9999;
+  background:rgba(0,0,0,.92);
+  display:none;align-items:center;justify-content:center;
+  padding:24px;
+}
+.overlay.vis{display:flex;}
+.ov-card{
+  background:var(--dk);border:3px solid var(--r);border-radius:16px;
+  padding:36px 32px;max-width:520px;text-align:center;
+  box-shadow:0 0 60px rgba(192,57,43,.3);
+  animation:ovIn .5s ease-out;
+}
+@keyframes ovIn{from{opacity:0;transform:scale(.85);}to{opacity:1;transform:scale(1);}}
+.ov-icon{margin-bottom:16px;}
+.ov-card h2{font-family:'Space Mono',monospace;font-size:1.1rem;color:var(--r);margin-bottom:14px;line-height:1.4;}
+.ov-card p{font-size:.84rem;color:#9aaa9e;line-height:1.7;margin-bottom:20px;}
+.ov-card p strong{color:#fff;}
+.ov-sign{
+  font-family:'Space Mono',monospace;font-size:.62rem;
+  color:#5a6b60;padding-top:16px;border-top:1px solid #2a3a2e;
+  margin-top:8px;
+}
 
 @media(max-width:700px){
   .ig{grid-template-columns:1fr;}
@@ -212,10 +253,30 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 </head>
 <body>
 
-<!-- SKIP ALERT -->
-<div class="skip-alert" id="skipAlert" title="Questo studente ha saltato avanti nel video">
-  <svg width="36" height="36" viewBox="0 0 24 24" fill="#c0392b" stroke="#fff" stroke-width="1"><path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/><line x1="12" y1="9" x2="12" y2="13" stroke="#fff" stroke-width="2" stroke-linecap="round"/><circle cx="12" cy="17" r="1" fill="#fff"/></svg>
-  <div class="skip-count" id="skipCount"></div>
+<!-- MONITOR STACK -->
+<div class="mon-stack" id="monStack"></div>
+
+<!-- DISCIPLINE OVERLAY -->
+<div class="overlay" id="overlay">
+  <div class="ov-card">
+    <div class="ov-icon">
+      <svg width="64" height="64" viewBox="0 0 24 24" fill="none" stroke="#c0392b" stroke-width="1.5" stroke-linecap="round">
+        <path d="M10.29 3.86L1.82 18a2 2 0 0 0 1.71 3h16.94a2 2 0 0 0 1.71-3L13.71 3.86a2 2 0 0 0-3.42 0z"/>
+        <line x1="12" y1="9" x2="12" y2="13"/><circle cx="12" cy="17" r=".5" fill="#c0392b"/>
+      </svg>
+    </div>
+    <h2>Fermati un momento.</h2>
+    <p>
+      Hai completato questa attivita' in modo troppo frettoloso.<br><br>
+      L'obiettivo non era <strong>finire in fretta</strong>, ma <strong>capire davvero</strong> quanto consumano le tue azioni digitali quotidiane e cosa significano per il pianeta.<br><br>
+      Ogni video saltato, ogni scelta cliccata senza leggere, ogni sezione sorvolata e' un'occasione persa per diventare un cittadino digitale piu' consapevole.<br><br>
+      <strong>Ricarica la pagina e ricomincia con calma.</strong><br>
+      Questa volta, prenditi il tempo di guardare, leggere e riflettere.
+    </p>
+    <div class="ov-sign">
+      Scuola Sacra Famiglia — Orzinuovi<br>Attivita' di Cittadinanza Digitale — Animatore Digitale
+    </div>
+  </div>
 </div>
 
 <!-- ═══════════ P0: SPLASH ═══════════ -->
@@ -354,25 +415,70 @@ function go(n){
   document.querySelectorAll('.ph').forEach(p=>p.classList.remove('on'));
   document.getElementById('P'+n).classList.add('on');
   window.scrollTo(0,0);
-  if(n===2){document.getElementById('tama').classList.add('vis');initSim();drawPlant(100);}
+  if(n===2){document.getElementById('tama').classList.add('vis');initSim();drawPlant(100);enterSection('learn');window._expStart=Date.now();}
 }
+
+/* ══════════════ UNIFIED MONITOR ══════════════ */
+const MON={
+  badges:{},
+  add(id,color,icon,label,title){
+    if(this.badges[id]){
+      // increment counter
+      this.badges[id].count++;
+      this.badges[id].el.querySelector('.mb-lbl').textContent=label+(this.badges[id].count>1?' (x'+this.badges[id].count+')':'');
+      return;
+    }
+    const d=document.createElement('div');
+    d.className='mon-badge '+color;
+    d.title=title||label;
+    d.innerHTML=icon+'<span class="mb-lbl">'+label+'</span>';
+    document.getElementById('monStack').appendChild(d);
+    this.badges[id]={el:d,count:1};
+  }
+};
+
+// Icon fragments
+const MI={
+  skip:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><polygon points="5,4 15,12 5,20" fill="#fff" opacity=".3"/><line x1="19" y1="5" x2="19" y2="19"/></svg>`,
+  jumped:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2.5" stroke-linecap="round"><path d="M13 2L3 14h9l-1 8 10-12h-9l1-8z" fill="#fff" opacity=".3"/></svg>`,
+  clicks:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M6 3v7a6 6 0 0 0 12 0V3"/><line x1="4" y1="21" x2="20" y2="21"/><line x1="12" y1="14" x2="12" y2="21"/></svg>`,
+  clock:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M12 6v6l4 2"/></svg>`,
+  eye:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M1 12s4-8 11-8 11 8 11 8-4 8-11 8-11-8-11-8z"/><circle cx="12" cy="12" r="3"/></svg>`,
+  empty:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><line x1="15" y1="9" x2="9" y2="15"/><line x1="9" y1="9" x2="15" y2="15"/></svg>`,
+  question:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><circle cx="12" cy="12" r="10"/><path d="M9.09 9a3 3 0 0 1 5.83 1c0 2-3 3-3 3"/><circle cx="12" cy="17" r=".5" fill="#fff"/></svg>`,
+  mult:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M2 12h20"/></svg>`,
+};
 
 /* ══════════════ YOUTUBE API ══════════════ */
 let ytReady=false, vDone=false, vStart=0;
-let lastVidTime=0, skipCount=0;
+let lastVidTime=0, skipCount=0, vidDuration=0;
 
 var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.head.appendChild(tag);
 var player;
 function onYouTubeIframeAPIReady(){
   player=new YT.Player('ytp',{videoId:'SEwfgJ3SlPg',playerVars:{rel:0,modestbranding:1,playsinline:1,fs:1},
-    events:{onStateChange:function(e){
-      if(e.data===YT.PlayerState.PLAYING&&!vStart){vStart=Date.now();lastVidTime=player.getCurrentTime();}
-      if(e.data===YT.PlayerState.ENDED){vDone=true;unlock();}
-    }}});
+    events:{
+      onReady:function(){ytReady=true;try{vidDuration=player.getDuration();}catch(e){}},
+      onStateChange:function(e){
+        if(e.data===YT.PlayerState.PLAYING){
+          if(!vStart){vStart=Date.now();lastVidTime=player.getCurrentTime();}
+          if(!vidDuration)try{vidDuration=player.getDuration();}catch(e){}
+        }
+        if(e.data===YT.PlayerState.ENDED){
+          vDone=true;
+          if(vStart&&vidDuration>0){
+            const realSec=(Date.now()-vStart)/1000;
+            if(realSec<vidDuration*0.7) MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Ha trascinato il video alla fine');
+          } else if(!vStart){
+            MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Video mai avviato correttamente');
+          }
+          unlock();
+        }
+      }
+    }});
 }
 function unlock(){document.getElementById('bv').classList.add('rdy');document.getElementById('vlk').innerHTML='Video completato!';document.getElementById('vlk').style.color='#2a9d5c';}
 
-// Timer + skip detection
 setInterval(()=>{
   if(vDone)return;
   if(vStart){
@@ -383,32 +489,73 @@ setInterval(()=>{
       document.getElementById('vlk').textContent='Puoi procedere.';
       document.getElementById('vlk').style.color='var(--gm)';
     }
-    // Skip detection
     if(player&&player.getCurrentTime){
       try{
         const ct=player.getCurrentTime();
-        const diff=ct-lastVidTime;
-        if(diff>6){
-          // jumped forward more than 6 seconds in 1 real second = skip
-          skipCount++;
-          const alert=document.getElementById('skipAlert');
-          alert.classList.add('vis');
-          document.getElementById('skipCount').textContent='SKIP x'+skipCount;
-        }
+        if(ct-lastVidTime>6){skipCount++;MON.add('vskip','red',MI.skip,'SKIP AVANTI x'+skipCount,'Ha mandato avanti il video durante la visione');}
         lastVidTime=ct;
       }catch(e){}
     }
   }
 },1000);
 
+/* ══════════════ BEHAVIOR TRACKING ══════════════ */
+const clickLog=[];
+let choicesDone=0, choiceTimestamps=[], sectionEnter={};
+
+function logClick(){
+  const now=Date.now();
+  clickLog.push(now);
+  while(clickLog.length>0&&now-clickLog[0]>15000) clickLog.shift();
+  if(clickLog.filter(t=>now-t<5000).length>=8) MON.add('compulsive','amber',MI.clicks,'CLIC COMPULSIVI','Clicca tutto a raffica senza leggere');
+}
+
+function logChoice(){
+  const now=Date.now();
+  choicesDone++;
+  choiceTimestamps.push(now);
+  // If 3+ choices clicked within 6 seconds = not reading
+  if(choiceTimestamps.length>=3){
+    const last3=choiceTimestamps.slice(-3);
+    if(last3[2]-last3[0]<6000) MON.add('noread','purple',MI.eye,'SCELTE NON LETTE','Clicca le scelte senza leggere le domande');
+  }
+}
+
+function enterSection(name){sectionEnter[name]=Date.now();}
+function leaveSection(name,minSec,label){
+  if(!sectionEnter[name])return;
+  const elapsed=(Date.now()-sectionEnter[name])/1000;
+  if(elapsed<minSec) MON.add('fast_'+name,'amber',MI.clock,label,'Ha completato la sezione troppo velocemente');
+}
+
+function checkLearnQuality(){
+  if(choicesDone<3) MON.add('noscelte','purple',MI.question,'SCELTE SALTATE','Ha ignorato le scelte scomode (fatte meno di 3 su 10)');
+}
+
+function checkSimQuality(){
+  const{t}=calc();
+  if(t===0) MON.add('simvuoto','grey',MI.empty,'SIMULATORE VUOTO','Non ha acceso nessuna azione nel simulatore');
+}
+
+// Intercept clicks
+document.addEventListener('click',function(e){
+  if(e.target.closest('.ch-o')) logChoice();
+  if(e.target.closest('.ch-o,.tg,.pm,.btn-next,.nt')) logClick();
+});
+
 /* ══════════════ TAB NAVIGATION ══════════════ */
 document.querySelectorAll('.nt').forEach(t=>{t.onclick=()=>{if(t.classList.contains('locked'))return;goTab(t.dataset.s);}});
 function goTab(s){
+  const prev=document.querySelector('.sc.on');
+  if(prev&&prev.id==='s-learn'){leaveSection('learn',45,'SCOPRI TROPPO VELOCE');checkLearnQuality();}
+  if(prev&&prev.id==='s-sim'){leaveSection('sim',30,'SIMULA TROPPO VELOCE');checkSimQuality();}
+
   document.querySelectorAll('.nt').forEach(x=>x.classList.remove('on'));
   document.querySelectorAll('.sc').forEach(x=>x.classList.remove('on'));
   document.querySelector(`.nt[data-s="${s}"]`).classList.add('on');
   document.getElementById('s-'+s).classList.add('on');
   document.getElementById('hdrBar').style.display=(s==='sim'||s==='res')?'flex':'none';
+  enterSection(s);
 }
 
 /* ══════════════ DATA ══════════════ */
@@ -713,6 +860,16 @@ function drawPlant(pct){
 
 /* ══════════════ RESULTS ══════════════ */
 function showRes(){
+  // Discipline check: too fast or too many violations
+  const expElapsed=window._expStart?(Date.now()-window._expStart)/1000:9999;
+  const badgeCount=Object.keys(MON.badges).length;
+  if(expElapsed<900 || badgeCount>=3){
+    // Show overlay instead of results
+    MON.add('rushed','red',MI.jumped,'ATTIVITA\' FRETTOLOSA','Ha completato l\'intera esperienza troppo velocemente');
+    document.getElementById('overlay').classList.add('vis');
+    return;
+  }
+
   // Unlock results tab
   document.querySelector('.nt[data-s="res"]').classList.remove('locked');
   goTab('res');
