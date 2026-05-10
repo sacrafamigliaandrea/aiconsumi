@@ -33,7 +33,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
 .vh p{font-size:.72rem;color:#5a7a64;margin-top:3px;}
 .vc{width:100%;max-width:840px;border-radius:12px;overflow:hidden;border:3px solid #1e3324;box-shadow:0 12px 48px rgba(0,0,0,.6);}
 .va{position:relative;padding-bottom:56.25%;height:0;}
-.va iframe{position:absolute;inset:0;width:100%;height:100%;border:0;}
+.va iframe,.va video{position:absolute;inset:0;width:100%;height:100%;border:0;background:#000;}
 .vl{text-align:center;margin-top:16px;font-family:'Space Mono',monospace;font-size:.68rem;color:#5a7a64;max-width:400px;}
 .tb{display:inline-block;font-family:'Space Mono',monospace;font-size:.62rem;padding:3px 10px;border-radius:10px;background:rgba(255,255,255,.06);color:#5a7a64;margin-top:8px;}
 .btn-v{margin-top:16px;opacity:0;pointer-events:none;transition:opacity .6s;}
@@ -315,7 +315,7 @@ body{font-family:'DM Sans',sans-serif;background:var(--dk);color:#fff;min-height
     <h2>Fase 1 — Guarda il documentario</h2>
     <p>Niente distrazioni. Alla fine si attivera' il percorso interattivo.</p>
   </div>
-  <div class="vc"><div class="va"><div id="ytp"></div></div></div>
+  <div class="vc"><div class="va"><video id="ytp" controls playsinline preload="metadata" src="https://dl.dropboxusercontent.com/scl/fi/nxngkc1qgrp2jrr55dkji/consumi_ai.mp4?rlkey=9761p0lmx3mn1t6ajcmko47bb&amp;raw=1"></video></div></div>
   <div class="vl" id="vlk">Il percorso si sbloccherà al termine del video</div>
   <div class="tb" id="tmr"></div>
   <button class="btn btn-p btn-v" id="bv" onclick="go(2)">
@@ -449,34 +449,37 @@ const MI={
   mult:`<svg viewBox="0 0 24 24" fill="none" stroke="#fff" stroke-width="2" stroke-linecap="round"><path d="M12 22c5.523 0 10-4.477 10-10S17.523 2 12 2 2 6.477 2 12s4.477 10 10 10z"/><path d="M2 12h20"/></svg>`,
 };
 
-/* ══════════════ YOUTUBE API ══════════════ */
+/* ══════════════ VIDEO HTML5 (Dropbox) ══════════════ */
 let ytReady=false, vDone=false, vStart=0;
 let lastVidTime=0, skipCount=0, vidDuration=0;
+const player=document.getElementById('ytp');
 
-var tag=document.createElement('script');tag.src='https://www.youtube.com/iframe_api';document.head.appendChild(tag);
-var player;
-function onYouTubeIframeAPIReady(){
-  player=new YT.Player('ytp',{videoId:'tdUTUCn-OV4',playerVars:{rel:0,modestbranding:1,playsinline:1,fs:1},
-    events:{
-      onReady:function(){ytReady=true;try{vidDuration=player.getDuration();}catch(e){}},
-      onStateChange:function(e){
-        if(e.data===YT.PlayerState.PLAYING){
-          if(!vStart){vStart=Date.now();lastVidTime=player.getCurrentTime();}
-          if(!vidDuration)try{vidDuration=player.getDuration();}catch(e){}
-        }
-        if(e.data===YT.PlayerState.ENDED){
-          vDone=true;
-          if(vStart&&vidDuration>0){
-            const realSec=(Date.now()-vStart)/1000;
-            if(realSec<vidDuration*0.7) MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Ha trascinato il video alla fine');
-          } else if(!vStart){
-            MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Video mai avviato correttamente');
-          }
-          unlock();
-        }
-      }
-    }});
-}
+player.addEventListener('loadedmetadata',()=>{ytReady=true;vidDuration=player.duration||0;});
+player.addEventListener('play',()=>{
+  if(!vStart){vStart=Date.now();lastVidTime=player.currentTime;}
+  if(!vidDuration)vidDuration=player.duration||0;
+});
+player.addEventListener('seeking',()=>{
+  // intercetta salto avanti (drag della barra) — se il delta supera 6s lo conta come skip
+  if(!vStart)return;
+  const ct=player.currentTime;
+  if(ct-lastVidTime>6){
+    skipCount++;
+    MON.add('vskip','red',MI.skip,'SKIP AVANTI x'+skipCount,'Ha mandato avanti il video durante la visione');
+  }
+  lastVidTime=ct;
+});
+player.addEventListener('ended',()=>{
+  vDone=true;
+  if(vStart&&vidDuration>0){
+    const realSec=(Date.now()-vStart)/1000;
+    if(realSec<vidDuration*0.7) MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Ha trascinato il video alla fine');
+  } else if(!vStart){
+    MON.add('vjump','red',MI.jumped,'VIDEO SALTATO','Video mai avviato correttamente');
+  }
+  unlock();
+});
+function onYouTubeIframeAPIReady(){} // legacy stub, nessuno la chiama piu'
 function unlock(){document.getElementById('bv').classList.add('rdy');document.getElementById('vlk').innerHTML='Video completato!';document.getElementById('vlk').style.color='#2a9d5c';}
 
 setInterval(()=>{
@@ -489,13 +492,12 @@ setInterval(()=>{
       document.getElementById('vlk').textContent='Puoi procedere.';
       document.getElementById('vlk').style.color='var(--gm)';
     }
-    if(player&&player.getCurrentTime){
-      try{
-        const ct=player.getCurrentTime();
-        if(ct-lastVidTime>6){skipCount++;MON.add('vskip','red',MI.skip,'SKIP AVANTI x'+skipCount,'Ha mandato avanti il video durante la visione');}
-        lastVidTime=ct;
-      }catch(e){}
-    }
+    // tracking continuo posizione (ridondante con seeking, ma cattura skip via tasti tastiera/telecomando)
+    try{
+      const ct=player.currentTime;
+      if(ct-lastVidTime>6){skipCount++;MON.add('vskip','red',MI.skip,'SKIP AVANTI x'+skipCount,'Ha mandato avanti il video durante la visione');}
+      lastVidTime=ct;
+    }catch(e){}
   }
 },1000);
 
